@@ -21,7 +21,18 @@ module Mongoid
         #
         # @since 3.0.0
         def batch_insert(docs)
-          execute_batch_insert(docs, "$pushAll")
+          execute_batch_push(docs)
+        end
+
+        def execute_batch_push(docs)
+          self.inserts_valid = true
+          pushes = pre_process_batch_insert(docs)
+          if insertable?
+            collection.find(selector).update_one(
+                positionally(selector, '$push' => { path => { '$each' => pushes } }))
+            post_process_batch_insert(docs)
+          end
+          pushes
         end
 
         # Clear all of the docs out of the relation in a single swipe.
